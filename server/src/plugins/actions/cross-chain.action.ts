@@ -13,6 +13,7 @@ import {
 import { CollabLandBaseAction } from "./collabland.action.js";
 import { randomUUID } from "crypto";
 import { chainMap } from "../../utils.js";
+import { z } from "zod";
 
 const crossChainTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -44,6 +45,43 @@ Respond with a JSON markdown block containing only the extracted values. Use nul
     "amount":  number | string | null
 }
 \`\`\``;
+
+const TOKEN_ADDRESSES_ARB = {
+  ETH: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  USDC: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", // Example Base USDC address
+  WETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+  // Add more tokens as needed
+};
+
+const TOKEN_ADDRESSES_BASE = {
+  ETH: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Example Base USDC address
+  WETH: "0x4200000000000000000000000000000000000006",
+  // Add more tokens as needed
+};
+
+const TOKEN_DECIMALS_EVM = {
+  ETH: 18,
+  USDC: 6,
+  WETH: 18,
+};
+
+const TOKEN_ADDRESSES_SOL = {
+  Sol: "So11111111111111111111111111111111111111112",
+  USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+};
+
+const TOKEN_DECIMALS_SOL = {
+  Sol: 9,
+  USDC: 6,
+};
+
+// Define the schema before the handler
+const bridgeSchema = z.object({
+  srcToken: z.string().nullable(),
+  destToken: z.string().nullable(),
+  amount: z.union([z.string(), z.number()]).nullable(),
+});
 
 export class GetChainAction extends CollabLandBaseAction {
   constructor() {
