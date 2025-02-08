@@ -14,7 +14,36 @@ import { CollabLandBaseAction } from "./collabland.action.js";
 import { randomUUID } from "crypto";
 import { chainMap } from "../../utils.js";
 
-const crossChainTemplate = ``;
+const crossChainTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
+
+Example response:
+\`\`\`json
+{
+    "srcToken": "So11111111111111111111111111111111111111112",
+    "destToken": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    "amount": "100000000"
+}
+\`\`\`
+
+{{recentMessages}}
+
+Given the recent messages and wallet information below:
+
+{{walletInfo}}
+
+Extract the following information about the requested token bridge:
+- srcToken (the token being bridged)
+- destToken (the token being bridged to)
+- amount (the amount of the token being bridged)
+
+Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined. The result should be a valid JSON object with the following schema:
+\`\`\`json
+{
+    "srcToken": string | null,
+    "destToken": string | null,
+    "amount":  number | string | null
+}
+\`\`\``;
 
 export class GetChainAction extends CollabLandBaseAction {
   constructor() {
