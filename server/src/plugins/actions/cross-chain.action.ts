@@ -12,8 +12,9 @@ import {
 } from "@ai16z/eliza";
 import { CollabLandBaseAction } from "./collabland.action.js";
 import { randomUUID } from "crypto";
-import { chainMap } from "../../utils.js";
-import { z } from "zod";
+import { isAddress } from "viem";
+import { isAddress as isAddressSolana } from "./utils.js";
+import { VersionedTransaction } from "@solana/web3.js";
 
 const crossChainTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -22,6 +23,8 @@ Example response:
 {
     "srcToken": "So11111111111111111111111111111111111111112",
     "destToken": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    "srcChain": "SOL",
+    "destChain": "BASE",
     "amount": "100000000"
 }
 \`\`\`
@@ -35,6 +38,8 @@ Given the recent messages and wallet information below:
 Extract the following information about the requested token bridge:
 - srcToken (the token being bridged)
 - destToken (the token being bridged to)
+- srcChain (the chain of the token being bridged)
+- destChain (the chain of the token being bridged to)
 - amount (the amount of the token being bridged)
 
 Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined. The result should be a valid JSON object with the following schema:
@@ -42,6 +47,8 @@ Respond with a JSON markdown block containing only the extracted values. Use nul
 {
     "srcToken": string | null,
     "destToken": string | null,
+    "srcChain": string | null,
+    "destChain": string | null,
     "amount":  number | string | null
 }
 \`\`\``;
@@ -76,12 +83,11 @@ const TOKEN_DECIMALS_SOL = {
   USDC: 6,
 };
 
-// Define the schema before the handler
-const bridgeSchema = z.object({
-  srcToken: z.string().nullable(),
-  destToken: z.string().nullable(),
-  amount: z.union([z.string(), z.number()]).nullable(),
-});
+const CHAIN_ID = {
+  ARB: 42161,
+  BASE: 8453,
+  SOL: 101,
+};
 
 export class GetChainAction extends CollabLandBaseAction {
   constructor() {
@@ -92,7 +98,7 @@ export class GetChainAction extends CollabLandBaseAction {
       "CROSS_CHAIN_ACTIONS",
     ];
     const description =
-      "Extracts the chain from the recent messages and the available chains are ethereum, base, linea and solana.";
+      "Extracts the chain from the recent messages and the available chains are base, arbitrum and solana.";
     const handler: Handler = async (
       _runtime,
       message,
@@ -101,36 +107,141 @@ export class GetChainAction extends CollabLandBaseAction {
       _callback
     ): Promise<boolean> => {
       try {
-        console.log("[GetChainAction] message", message);
-        console.log("[GetChainAction] options", _options);
-
-        const availableChains = Object.entries(chainMap)
-          .map(([chain]) => {
-            return `${chain}`;
-          })
-          .join("\n");
-        console.log("[GetChainAction] availableChains", availableChains);
+        console.log("[GetCrossChainAction] message", message);
+        console.log("[GetCrossChainAction] options", _options);
 
         const extractContext = composeContext({
           state: {
             ..._state!,
-            availableChains: availableChains,
           },
           template: crossChainTemplate,
         });
-        console.log("[GetChainAction] extractContext", extractContext);
-        const extractedChain = await generateObject({
-          context: extractContext,
-          modelClass: ModelClass.SMALL,
+
+        console.log("[GetCrossChainAction] extractContext", extractContext);
+        const content = await generateObject({
           runtime: _runtime,
+          context: extractContext,
+          modelClass: ModelClass.LARGE,
         });
-        console.log("[GetChainAction] extractedChain", extractedChain);
-        if (!extractedChain.chain) {
-          _callback?.({
-            text: "I couldn't identify a valid chain name. Please specify a supported chain like Ethereum, Base, Linea or Solana.",
-          });
-          return false;
+
+        console.log("[GetCrossChainAction] content", content);
+        if (!content.amount) {
+          console.log("Amount is not a number, skipping swap");
+          const responseMsg = {
+            text: "The amount must be a number",
+          };
+          _callback?.(responseMsg);
+          return true;
         }
+
+        if (!content.srcToken) {
+          console.log("srcToken is no data, skipping swap");
+          const responseMsg = {
+            text: "The srcToken must be a valid token",
+          };
+          _callback?.(responseMsg);
+          return true;
+        }
+
+        if (!content.destToken) {
+          console.log("destToken is no data, skipping swap");
+          const responseMsg = {
+            text: "The destToken must be a valid token",
+          };
+          _callback?.(responseMsg);
+          return true;
+        }
+
+        if (!content.srcChain) {
+          console.log("srcChain is no data, skipping swap");
+          const responseMsg = {
+            text: "The srcChain must be a valid chain",
+          };
+          _callback?.(responseMsg);
+          return true;
+        }
+
+        if (!content.destChain) {
+          console.log("destChain is no data, skipping swap");
+          const responseMsg = {
+            text: "The destChain must be a valid chain",
+          };
+          _callback?.(responseMsg);
+          return true;
+        }
+
+        const srcToken = !isAddressSolana(content.srcToken)
+          ? TOKEN_ADDRESSES_SOL[
+              content.srcToken as keyof typeof TOKEN_ADDRESSES_SOL
+            ]
+          : content.srcToken;
+        const destToken = !isAddress(content.destToken)
+          ? TOKEN_ADDRESSES_BASE[
+              content.destToken as keyof typeof TOKEN_ADDRESSES_BASE
+            ]
+          : content.destToken;
+        const amount = String(
+          parseFloat(content.amount) *
+            10 **
+              TOKEN_DECIMALS_SOL[
+                content.srcToken as keyof typeof TOKEN_DECIMALS_SOL
+              ]
+        );
+
+        const jitoTip = "1000000";
+        const srcChain = CHAIN_ID.SOL;
+        const destChain = CHAIN_ID.BASE;
+        const slippage = "1.5";
+
+        // const quote = await fetchSolanaQuote({
+        //     senderAddress: solanaSigner.publicKey.toBase58(),
+        //     amount,
+        //     srcToken,
+        //     destToken,
+        //     srcChain,
+        //     destChain,
+        //     slippage,
+        //     jitoTip,
+        //     // `destinationAddress` and `dstChainOrderAuthorityAddress` are required for bridge transactions
+        //     destinationAddress: baseSigner.address,
+        //     dstChainOrderAuthorityAddress: baseSigner.address,
+        // });
+
+        // console.log(`Expected to receive: ${
+        //     formatStringEstimation(quote.outputAmount.value, quote.outputAmount.decimals)
+        // } ${quote.outputAmount.symbol}`);
+
+        // deserialize Solana transactions
+        const transactions: VersionedTransaction[] = [];
+        // for (let i = 0; i < quote.calldatas.length; i++) {
+        //     const calldata = quote.calldatas[i];
+        //     const messageBuffer = Buffer.from(calldata.data, 'base64');
+        //     const transaction = VersionedTransaction.deserialize(messageBuffer);
+        //     transactions.push(transaction);
+        // }
+
+        // // sign transactions
+        // for (let transaction of transactions) {
+        //     transaction.sign([solanaSigner]);
+        // }
+
+        // // sending transactions as Jito bundle
+        // const bundleId = await sendJitoBundle(transactions);
+
+        // // waiting for transactions confirmation
+        // while (true) {
+        //     const bundleData = await getBundleStatuses(bundleId);
+        //     console.log(`Bundle status: ${bundleData.status}`);
+
+        //     await sleep(1000);
+        //     if (bundleData.status === 'confirmed' ||bundleData.status === 'finalized') {
+        //         bundleData.transactions.forEach((transactionHash) => {
+        //         console.log(`https://solscan.io/tx/${transactionHash}`);
+        //         });
+
+        //         break;
+        //     }
+        // }
 
         // Create memory
         const chainMemory: Memory = {
@@ -140,18 +251,23 @@ export class GetChainAction extends CollabLandBaseAction {
           roomId: message.roomId,
           content: {
             text: "",
-            chain: extractedChain.chain,
+            srcToken: content.srcToken,
+            destToken: content.destToken,
+            amount: content.amount,
+            srcChain: content.srcChain,
+            destChain: content.destChain,
           },
           createdAt: Date.now(),
           embedding: getEmbeddingZeroVector(),
           unique: true,
         };
+
         console.log("[GetChainAction] creating chainMemory", chainMemory);
         const onChainMemoryManager = _runtime.getMemoryManager("onchain")!;
         await onChainMemoryManager.createMemory(chainMemory, true);
 
         _callback?.({
-          text: `Your current chain is now ${extractedChain.chain} `,
+          text: `Your current chain is now ${content.destToken} `,
         });
         return true;
       } catch (error) {
@@ -171,7 +287,29 @@ export class GetChainAction extends CollabLandBaseAction {
         {
           user: "{{user1}}",
           content: {
-            text: "What is your smart account?",
+            text: "Bridge 1 SOL for USDC on Base",
+          },
+        },
+        {
+          user: "{{user1}}",
+          content: {
+            text: "Bridge 1 SOL for USDC on Base",
+            srcToken: "SOL",
+            destToken: "USDC",
+            amount: 1,
+          },
+        },
+        {
+          user: "{{user2}}",
+          content: {
+            text: "Processing bridge: 1 SOL -> USDC on Base",
+            action: "SOLANA_BRIDGE_TO_EVM",
+          },
+        },
+        {
+          user: "{{user2}}",
+          content: {
+            text: "Bridge complete! Transaction: [tx_hash]",
           },
         },
       ],
