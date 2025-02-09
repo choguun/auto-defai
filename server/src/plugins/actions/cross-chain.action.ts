@@ -286,12 +286,15 @@ export class CrossChainAction extends CollabLandBaseAction {
           unique: true,
         };
 
-        console.log("[GetChainAction] creating chainMemory", chainMemory);
+        console.log("[CrossChainAction] creating chainMemory", chainMemory);
         const onChainMemoryManager = _runtime.getMemoryManager("onchain")!;
         await onChainMemoryManager.createMemory(chainMemory, true);
 
         _callback?.({
-          text: `Your current chain is now ${content.destToken} `,
+          text: `Bridge complete! Transaction: [tx_hash], Amount: ${content.amount} ${content.srcToken}, Received: ${formatStringEstimation(
+            quote.outputAmount.value,
+            quote.outputAmount.decimals
+          )} ${quote.outputAmount.symbol}`,
         });
         return true;
       } catch (error) {
