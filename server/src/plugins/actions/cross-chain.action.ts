@@ -68,18 +68,18 @@ const TOKEN_ADDRESSES_ARB = {
   // Add more tokens as needed
 };
 
-const TOKEN_ADDRESSES_BASE = {
-  ETH: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Example Base USDC address
-  WETH: "0x4200000000000000000000000000000000000006",
-  // Add more tokens as needed
-};
+// const TOKEN_ADDRESSES_BASE = {
+//   ETH: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+//   USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Example Base USDC address
+//   WETH: "0x4200000000000000000000000000000000000006",
+//   // Add more tokens as needed
+// };
 
-const TOKEN_DECIMALS_EVM = {
-  ETH: 18,
-  USDC: 6,
-  WETH: 18,
-};
+// const TOKEN_DECIMALS_EVM = {
+//   ETH: 18,
+//   USDC: 6,
+//   WETH: 18,
+// };
 
 const TOKEN_ADDRESSES_SOL = {
   Sol: "So11111111111111111111111111111111111111112",

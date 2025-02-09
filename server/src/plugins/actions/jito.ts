@@ -1,7 +1,7 @@
 import { VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
 import axios from "axios";
-import { BundleStatusResponse, JitoBundleResponse } from "../types/jito";
+import { BundleStatusResponse, JitoBundleResponse } from "./types.js";
 
 /**
  * Sends signed transactions as Jito bundle
