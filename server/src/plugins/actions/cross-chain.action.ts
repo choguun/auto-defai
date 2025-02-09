@@ -97,8 +97,7 @@ export class GetChainAction extends CollabLandBaseAction {
       "CROSS_CHAIN_ACTION",
       "CROSS_CHAIN_ACTIONS",
     ];
-    const description =
-      "Extracts the chain from the recent messages and the available chains are base, arbitrum and solana.";
+    const description = "Cross-chain actions";
     const handler: Handler = async (
       _runtime,
       message,
