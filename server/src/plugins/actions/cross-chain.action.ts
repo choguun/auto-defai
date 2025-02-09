@@ -329,6 +329,8 @@ export class CrossChainAction extends CollabLandBaseAction {
             text: "Bridge 1 SOL for USDC on Base",
             srcToken: "SOL",
             destToken: "USDC",
+            srcChain: "SOL",
+            destChain: "BASE",
             amount: 1,
           },
         },
@@ -343,6 +345,19 @@ export class CrossChainAction extends CollabLandBaseAction {
           user: "{{user2}}",
           content: {
             text: "Bridge complete! Transaction: [tx_hash]",
+          },
+        },
+      ],
+      [
+        {
+          user: "{{user1}}",
+          content: {
+            text: "swap from solana chain amount 0.001 sol to base chain usdc token",
+            srcToken: "SOL",
+            destToken: "USDC",
+            srcChain: "SOL",
+            destChain: "BASE",
+            amount: 0.001,
           },
         },
       ],
