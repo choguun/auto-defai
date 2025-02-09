@@ -61,19 +61,19 @@ Respond with a JSON markdown block containing only the extracted values. Use nul
 }
 \`\`\``;
 
-const TOKEN_ADDRESSES_ARB = {
-  ETH: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-  USDC: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", // Example Base USDC address
-  WETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-  // Add more tokens as needed
-};
-
-// const TOKEN_ADDRESSES_BASE = {
+// const TOKEN_ADDRESSES_ARB = {
 //   ETH: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-//   USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Example Base USDC address
-//   WETH: "0x4200000000000000000000000000000000000006",
+//   USDC: "0xaf88d065e77c8cc2239327c5edb3a432268e5831", // Example Base USDC address
+//   WETH: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
 //   // Add more tokens as needed
 // };
+
+const TOKEN_ADDRESSES_BASE = {
+  ETH: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Example Base USDC address
+  WETH: "0x4200000000000000000000000000000000000006",
+  // Add more tokens as needed
+};
 
 // const TOKEN_DECIMALS_EVM = {
 //   ETH: 18,
@@ -183,8 +183,8 @@ export class CrossChainAction extends CollabLandBaseAction {
             ]
           : content.srcToken;
         const destToken = !isAddress(content.destToken)
-          ? TOKEN_ADDRESSES_ARB[
-              content.destToken as keyof typeof TOKEN_ADDRESSES_ARB
+          ? TOKEN_ADDRESSES_BASE[
+              content.destToken as keyof typeof TOKEN_ADDRESSES_BASE
             ]
           : content.destToken;
         const amount = String(
