@@ -82,12 +82,12 @@ const TOKEN_ADDRESSES_ARB = {
 // };
 
 const TOKEN_ADDRESSES_SOL = {
-  Sol: "So11111111111111111111111111111111111111112",
+  SOL: "So11111111111111111111111111111111111111112",
   USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
 };
 
 const TOKEN_DECIMALS_SOL = {
-  Sol: 9,
+  SOL: 9,
   USDC: 6,
 };
 
@@ -187,7 +187,13 @@ export class CrossChainAction extends CollabLandBaseAction {
               content.destToken as keyof typeof TOKEN_ADDRESSES_ARB
             ]
           : content.destToken;
-        const amount = String(parseFloat(content.amount) * 10 ** 9);
+        const amount = String(
+          parseFloat(content.amount) *
+            10 **
+              TOKEN_DECIMALS_SOL[
+                content.srcToken as keyof typeof TOKEN_DECIMALS_SOL
+              ]
+        );
 
         const jitoTip = "1000000";
         const srcChain = CHAIN_ID.SOL;
