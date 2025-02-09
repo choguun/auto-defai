@@ -97,7 +97,7 @@ const CHAIN_ID = {
   SOL: "101",
 };
 
-export class GetChainAction extends CollabLandBaseAction {
+export class CrossChainAction extends CollabLandBaseAction {
   constructor() {
     const name = "CROSS_CHAIN";
     const similes = [
