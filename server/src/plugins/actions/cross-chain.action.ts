@@ -200,15 +200,21 @@ export class CrossChainAction extends CollabLandBaseAction {
         const destChain = CHAIN_ID.BASE;
         const slippage = "1.5";
 
-        const baseProvider = ethers.getDefaultProvider(
-          process.env.BASE_MAINNET_URL!
+        const BASE_MAINNET_URL = _runtime.getSetting("BASE_MAINNET_URL");
+
+        const baseProvider = ethers.getDefaultProvider(BASE_MAINNET_URL!);
+
+        const SOLANA_BASE_58_PRIVATE_KEY = _runtime.getSetting(
+          "SOLANA_BASE_58_PRIVATE_KEY"
         );
-        const baseSigner = new ethers.Wallet(
-          process.env.EVM_PRIVATE_KEY!
-        ).connect(baseProvider);
+        const EVM_PRIVATE_KEY = _runtime.getSetting("EVM_PRIVATE_KEY");
+
+        const baseSigner = new ethers.Wallet(EVM_PRIVATE_KEY!).connect(
+          baseProvider
+        );
 
         const solanaSigner = Keypair.fromSeed(
-          bs58.decode(process.env.SOLANA_BASE_58_PRIVATE_KEY!).slice(0, 32)
+          bs58.decode(SOLANA_BASE_58_PRIVATE_KEY!).slice(0, 32)
         );
 
         const quote = await fetchSolanaQuote({
