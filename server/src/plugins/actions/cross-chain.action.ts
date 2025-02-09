@@ -31,7 +31,7 @@ Example response:
 {
     "srcToken": "So11111111111111111111111111111111111111112",
     "destToken": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-    "srcChain": "SOL",
+    "srcChain": "SOLANA",
     "destChain": "BASE",
     "amount": "100000000"
 }
@@ -187,13 +187,7 @@ export class CrossChainAction extends CollabLandBaseAction {
               content.destToken as keyof typeof TOKEN_ADDRESSES_ARB
             ]
           : content.destToken;
-        const amount = String(
-          parseFloat(content.amount) *
-            10 **
-              TOKEN_DECIMALS_SOL[
-                content.srcToken as keyof typeof TOKEN_DECIMALS_SOL
-              ]
-        );
+        const amount = String(parseFloat(content.amount) * 10 ** 9);
 
         const jitoTip = "1000000";
         const srcChain = CHAIN_ID.SOL;
@@ -320,31 +314,12 @@ export class CrossChainAction extends CollabLandBaseAction {
         {
           user: "{{user1}}",
           content: {
-            text: "Bridge 1 SOL for USDC on Base",
-          },
-        },
-        {
-          user: "{{user1}}",
-          content: {
-            text: "Bridge 1 SOL for USDC on Base",
+            text: "Bridge from solana 1 SOL for USDC on Base",
             srcToken: "SOL",
             destToken: "USDC",
-            srcChain: "SOL",
+            srcChain: "SOLANA",
             destChain: "BASE",
             amount: 1,
-          },
-        },
-        {
-          user: "{{user2}}",
-          content: {
-            text: "Processing bridge: 1 SOL -> USDC on Base",
-            action: "SOLANA_BRIDGE_TO_EVM",
-          },
-        },
-        {
-          user: "{{user2}}",
-          content: {
-            text: "Bridge complete! Transaction: [tx_hash]",
           },
         },
       ],
@@ -352,10 +327,10 @@ export class CrossChainAction extends CollabLandBaseAction {
         {
           user: "{{user1}}",
           content: {
-            text: "swap from solana chain amount 0.001 sol to base chain usdc token",
+            text: "swap from SOLANA 0.001 SOL to USDC on BASE",
             srcToken: "SOL",
             destToken: "USDC",
-            srcChain: "SOL",
+            srcChain: "SOLANA",
             destChain: "BASE",
             amount: 0.001,
           },
