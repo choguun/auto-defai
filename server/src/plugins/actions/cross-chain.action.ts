@@ -105,7 +105,7 @@ export class CrossChainAction extends CollabLandBaseAction {
       "CROSS_CHAIN_ACTION",
       "CROSS_CHAIN_ACTIONS",
     ];
-    const description = "Cross-chain actions";
+    const description = "Cross-chain swap actions";
     const handler: Handler = async (
       _runtime,
       message,
