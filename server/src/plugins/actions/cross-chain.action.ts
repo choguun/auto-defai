@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 /* eslint-disable no-unused-vars */
 
 import {
@@ -14,7 +15,14 @@ import { CollabLandBaseAction } from "./collabland.action.js";
 import { randomUUID } from "crypto";
 import { isAddress } from "viem";
 import { isAddress as isAddressSolana } from "./utils.js";
-import { VersionedTransaction } from "@solana/web3.js";
+import { sendJitoBundle } from "./jito.js";
+import { getBundleStatuses } from "./jito.js";
+import { Keypair, VersionedTransaction } from "@solana/web3.js";
+import { fetchSolanaQuote } from "./fetch-quote.js";
+import { ethers } from "ethers";
+import bs58 from "bs58";
+import { formatStringEstimation } from "./formatting.js";
+import { sleep } from "./jito.js";
 
 const crossChainTemplate = `Respond with a JSON markdown block containing only the extracted values. Use null for any values that cannot be determined.
 
@@ -84,9 +92,9 @@ const TOKEN_DECIMALS_SOL = {
 };
 
 const CHAIN_ID = {
-  ARB: 42161,
-  BASE: 8453,
-  SOL: 101,
+  ARB: "42161",
+  BASE: "8453",
+  SOL: "101",
 };
 
 export class GetChainAction extends CollabLandBaseAction {
@@ -175,8 +183,8 @@ export class GetChainAction extends CollabLandBaseAction {
             ]
           : content.srcToken;
         const destToken = !isAddress(content.destToken)
-          ? TOKEN_ADDRESSES_BASE[
-              content.destToken as keyof typeof TOKEN_ADDRESSES_BASE
+          ? TOKEN_ADDRESSES_ARB[
+              content.destToken as keyof typeof TOKEN_ADDRESSES_ARB
             ]
           : content.destToken;
         const amount = String(
@@ -192,55 +200,72 @@ export class GetChainAction extends CollabLandBaseAction {
         const destChain = CHAIN_ID.BASE;
         const slippage = "1.5";
 
-        // const quote = await fetchSolanaQuote({
-        //     senderAddress: solanaSigner.publicKey.toBase58(),
-        //     amount,
-        //     srcToken,
-        //     destToken,
-        //     srcChain,
-        //     destChain,
-        //     slippage,
-        //     jitoTip,
-        //     // `destinationAddress` and `dstChainOrderAuthorityAddress` are required for bridge transactions
-        //     destinationAddress: baseSigner.address,
-        //     dstChainOrderAuthorityAddress: baseSigner.address,
-        // });
+        const baseProvider = ethers.getDefaultProvider(
+          process.env.BASE_MAINNET_URL!
+        );
+        const baseSigner = new ethers.Wallet(
+          process.env.EVM_PRIVATE_KEY!
+        ).connect(baseProvider);
 
-        // console.log(`Expected to receive: ${
-        //     formatStringEstimation(quote.outputAmount.value, quote.outputAmount.decimals)
-        // } ${quote.outputAmount.symbol}`);
+        const solanaSigner = Keypair.fromSeed(
+          bs58.decode(process.env.SOLANA_BASE_58_PRIVATE_KEY!).slice(0, 32)
+        );
+
+        const quote = await fetchSolanaQuote({
+          senderAddress: solanaSigner.publicKey.toBase58(),
+          amount,
+          srcToken,
+          destToken,
+          srcChain,
+          destChain,
+          slippage,
+          jitoTip,
+          // `destinationAddress` and `dstChainOrderAuthorityAddress` are required for bridge transactions
+          destinationAddress: baseSigner.address,
+          dstChainOrderAuthorityAddress: baseSigner.address,
+        });
+
+        console.log(
+          `Expected to receive: ${formatStringEstimation(
+            quote.outputAmount.value,
+            quote.outputAmount.decimals
+          )} ${quote.outputAmount.symbol}`
+        );
 
         // deserialize Solana transactions
         const transactions: VersionedTransaction[] = [];
-        // for (let i = 0; i < quote.calldatas.length; i++) {
-        //     const calldata = quote.calldatas[i];
-        //     const messageBuffer = Buffer.from(calldata.data, 'base64');
-        //     const transaction = VersionedTransaction.deserialize(messageBuffer);
-        //     transactions.push(transaction);
-        // }
+        for (let i = 0; i < quote.calldatas.length; i++) {
+          const calldata = quote.calldatas[i];
+          const messageBuffer = Buffer.from(calldata.data, "base64");
+          const transaction = VersionedTransaction.deserialize(messageBuffer);
+          transactions.push(transaction);
+        }
 
-        // // sign transactions
-        // for (let transaction of transactions) {
-        //     transaction.sign([solanaSigner]);
-        // }
+        // sign transactions
+        for (const transaction of transactions) {
+          transaction.sign([solanaSigner]);
+        }
 
-        // // sending transactions as Jito bundle
-        // const bundleId = await sendJitoBundle(transactions);
+        // sending transactions as Jito bundle
+        const bundleId = await sendJitoBundle(transactions);
 
-        // // waiting for transactions confirmation
-        // while (true) {
-        //     const bundleData = await getBundleStatuses(bundleId);
-        //     console.log(`Bundle status: ${bundleData.status}`);
+        // waiting for transactions confirmation
+        while (true) {
+          const bundleData = await getBundleStatuses(bundleId);
+          console.log(`Bundle status: ${bundleData.status}`);
 
-        //     await sleep(1000);
-        //     if (bundleData.status === 'confirmed' ||bundleData.status === 'finalized') {
-        //         bundleData.transactions.forEach((transactionHash) => {
-        //         console.log(`https://solscan.io/tx/${transactionHash}`);
-        //         });
+          await sleep(1000);
+          if (
+            bundleData.status === "confirmed" ||
+            bundleData.status === "finalized"
+          ) {
+            bundleData.transactions.forEach((transactionHash) => {
+              console.log(`https://solscan.io/tx/${transactionHash}`);
+            });
 
-        //         break;
-        //     }
-        // }
+            break;
+          }
+        }
 
         // Create memory
         const chainMemory: Memory = {
